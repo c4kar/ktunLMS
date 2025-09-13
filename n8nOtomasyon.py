@@ -558,4 +558,4 @@ def download_documents_from_md(driver, md_filename, course_title):
 #         required=True, 
 #         nargs='+', 
 #         help="İçeriği indirilecek derslerin ID'leri (boşluklarla ayırarak birden fazla girilebilir).\n Örnek kullanım:\n"
-#     ) 
+#     )
