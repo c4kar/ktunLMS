@@ -3,3 +3,5 @@ Pillow
 selenium
 webdriver-manager
 beautifulsoup4
+opencv-python
+numpy

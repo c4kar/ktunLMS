@@ -101,29 +101,13 @@ def extract_course_content(driver, course_id):
 
     return safe_course_title, markdown_content
 
-def otomasyonu_baslat(uniemail, unisifre, course_ids, download_documents=False):
+def otomasyonu_baslat(uniemail, unisifre, course_ids):
     """
     Ana otomasyon fonksiyonu. LMS'e giriş yapar ve verilen ders ID'leri için içerik çeker.
-    
-    Args:
-        uniemail: KTÜN uzantılı e-posta adresi
-        unisifre: LMS şifresi
-        course_ids: İçeriği indirilecek derslerin ID'leri
-        download_documents: True ise, ders materyallerini (PDF, DOCX vb.) indirir
     """
     chrome_options = Options()
-    chrome_options.add_argument("--headless") # Arayüzü gizlemek için
+    # chrome_options.add_argument("--headless") # Arayüzü gizlemek için
     chrome_options.add_argument("--log-level=3") # Konsol loglarını temizler
-    
-    # Temel indirme ayarlarını yapılandır
-    # Not: Ders-spesifik indirme dizini daha sonra her ders için ayrı ayrı ayarlanacak
-    prefs = {
-        "download.prompt_for_download": False,
-        "download.directory_upgrade": True,
-        "safebrowsing.enabled": False,
-        "plugins.always_open_pdf_externally": True  # PDF'leri tarayıcıda açmak yerine indir
-    }
-    chrome_options.add_experimental_option("prefs", prefs)
     
     driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=chrome_options)
     driver.maximize_window()
@@ -184,32 +168,16 @@ def otomasyonu_baslat(uniemail, unisifre, course_ids, download_documents=False):
             except Exception as e:
                 print(f"❌ Markdown dosyası yazılırken bir hata oluştu: {e}")
 
-            # MD dosyasındaki linkleri tarayıp belgeleri indir (opsiyonel)
-            if course_title and download_documents:
-                print(f"\n📥 Belge indirme seçeneği aktif. '{md_filename}' dosyasındaki belgeler indiriliyor...")
-                
-                # Her ders için ayrı bir indirme klasörü oluştur
-                download_dir = os.path.abspath(f"LMS_Downloads/{course_title}")
-                os.makedirs(download_dir, exist_ok=True)
-                print(f"📁 Dosyalar şu klasöre indirilecek: {download_dir}")
-                
-                # Chrome'un indirme dizinini bu ders için güncelle
-                driver.execute_cdp_cmd('Page.setDownloadBehavior', {
-                    'behavior': 'allow',
-                    'downloadPath': download_dir
-                })
-                
-                # Belgeleri indir
+            # MD dosyasındaki linkleri tarayıp belgeleri indir
+            if course_title:
                 download_documents_from_md(driver, md_filename, course_title)
-            elif course_title:
-                print(f"\nℹ️ Belge indirme seçeneği aktif değil. Belgeleri indirmek için -d parametresini kullanın.")
                 
     print("\n🎉 Tüm işlemler tamamlandı. Tarayıcı kapatılıyor.")
     driver.quit()
 
 def download_documents_from_md(driver, md_filename, course_title):
     """
-    MD dosyasındaki linkleri tarayıp belgeleri doğrudan indirir.
+    MD dosyasındaki linkleri tarayıp belgeleri indirir.
     """
     print(f"\n📄 '{md_filename}' dosyasındaki linkler taranıyor...")
     
@@ -230,98 +198,89 @@ def download_documents_from_md(driver, md_filename, course_title):
     
     print(f"🔍 Toplam {len(links)} link bulundu.")
     
-    # Belgeleri indirmek için klasör yolunu al (klasör zaten oluşturuldu)
-    download_dir = os.path.abspath(f"LMS_Downloads/{course_title}")
+    # Belgeleri indirmek için klasör oluştur
+    download_dir = f"LMS_Downloads/{course_title}"
+    os.makedirs(download_dir, exist_ok=True)
     
     for i, link in enumerate(links, 1):
         print(f"\n🔗 Link {i}/{len(links)}: {link}")
         
         try:
-            # Linke git (tarayıcı oturumunu kullanmak için)
+            # Linke git
             driver.get(link)
             time.sleep(2)  # Sayfanın yüklenmesi için bekle
             
-            # Dosya indirme işlemi
-            try:
-                # Mevcut URL'yi al (yönlendirmelerden sonra)
-                current_url = driver.current_url
+            # Sayfadaki indirilebilir dosyaları bul
+            download_links = []
+            
+            # Yaygın dosya uzantılarını içeren linkleri bul
+            file_extensions = ['.pdf', '.pptx', '.ppt', '.docx', '.doc', '.xlsx', '.xls', '.rar', '.zip']
+            elements = driver.find_elements(By.TAG_NAME, "a")
+            
+            for element in elements:
+                href = element.get_attribute("href")
+                if href:
+                    # Dosya uzantısı kontrolü
+                    if any(href.lower().endswith(ext) for ext in file_extensions):
+                        download_links.append(href)
+                    # Moodle'a özgü dosya indirme linkleri kontrolü
+                    elif "mod/resource/view.php" in href or "pluginfile.php" in href:
+                        download_links.append(href)
+            
+            if not download_links:
+                print("⚠️ Bu sayfada indirilebilir dosya bulunamadı.")
                 
-                # Tarayıcı oturumunun çerezlerini kullanarak dosyayı indir
-                headers = {
-                    'User-Agent': driver.execute_script("return navigator.userAgent"),
-                    'Referer': driver.current_url
-                }
-                response = requests.get(
-                    current_url,
-                    cookies={c['name']: c['value'] for c in driver.get_cookies()},
-                    headers=headers,
-                    stream=True,
-                    allow_redirects=True
-                )
+                # Sayfanın kendisini HTML olarak kaydet
+                page_title = driver.title
+                safe_page_title = "".join(c for c in page_title if c.isalnum() or c in (' ', '-')).rstrip()
                 
-                # Dosya adını belirle
-                if "Content-Disposition" in response.headers:
-                    # Content-Disposition header'ından dosya adını çıkar
-                    content_disp = response.headers["Content-Disposition"]
-                    filename_match = re.search(r'filename="(.+?)"', content_disp)
-                    if filename_match:
-                        filename = filename_match.group(1)
-                    else:
-                        filename = f"dosya_{i}"
-                else:
-                    # URL'den dosya adını çıkar
-                    filename = current_url.split("/")[-1].split("?")[0]
-                    if not filename or len(filename) < 3:
-                        # Sayfa başlığını kullan
-                        filename = "".join(c for c in driver.title if c.isalnum() or c in (' ', '-', '_', '.')).rstrip()
-                        # Uzantı ekle
-                        if not any(filename.lower().endswith(ext) for ext in ['.pdf', '.pptx', '.ppt', '.docx', '.doc', '.xlsx', '.xls', '.rar', '.zip','.php']):
-                            # İçerik türüne göre uzantı belirle
-                            content_type = response.headers.get('Content-Type', '')
-                            if 'pdf' in content_type:
-                                filename += '.pdf'
-                            elif 'powerpoint' in content_type or 'presentation' in content_type:
-                                filename += '.pptx'
-                            elif 'word' in content_type or 'document' in content_type:
-                                filename += '.docx'
-                            elif 'excel' in content_type or 'spreadsheet' in content_type:
-                                filename += '.xlsx'
-                            elif 'zip' in content_type or 'compressed' in content_type:
-                                filename += '.zip'
-                            elif 'html' in content_type:
-                                filename += '.html'
-                            else:
-                                filename += '.bin'  # Bilinmeyen dosya türü
+                # Sayfalar klasörü oluştur
+                pages_dir = f"{download_dir}/Sayfalar"
+                os.makedirs(pages_dir, exist_ok=True)
                 
-                # Dosya yolu oluştur
-                file_path = os.path.join(download_dir, filename)
-                
-                # Dosyayı kaydet
-                with open(file_path, "wb") as f:
-                    for chunk in response.iter_content(chunk_size=8192):
-                        if chunk:
-                            f.write(chunk)
-                
-                print(f"✅ Dosya başarıyla indirildi: {file_path}")
-                
-            except Exception as e:
-                print(f"❌ Dosya indirilirken bir hata oluştu: {e}")
-                
-                # Hata durumunda sayfayı HTML olarak kaydet
+                html_filename = f"{pages_dir}/{safe_page_title}URL.html"
+                with open(html_filename, "w", encoding="utf-8") as f:
+                    f.write(driver.page_source)
+                print(f"✅ Sayfa HTML olarak kaydedildi: {html_filename}")
+                continue
+            
+            print(f"📁 {len(download_links)} indirilebilir dosya bulundu.")
+            
+            for j, download_link in enumerate(download_links, 1):
                 try:
-                    page_title = driver.title
-                    safe_page_title = "".join(c for c in page_title if c.isalnum() or c in (' ', '-')).rstrip()
+                    print(f"⬇️ Dosya {j}/{len(download_links)} indiriliyor: {download_link}")
                     
-                    # Sayfalar klasörü oluştur
-                    pages_dir = f"{download_dir}/Sayfalar"
-                    os.makedirs(pages_dir, exist_ok=True)
+                    # Tarayıcı ile indirme yerine requests kullanarak indir
+                    response = requests.get(download_link, cookies=driver.get_cookies(), stream=True)
                     
-                    html_filename = f"{pages_dir}/{safe_page_title}.html"
-                    with open(html_filename, "w", encoding="utf-8") as f:
-                        f.write(driver.page_source)
-                    print(f"✅ Sayfa HTML olarak kaydedildi: {html_filename}")
-                except Exception as html_error:
-                    print(f"❌ Sayfa HTML olarak kaydedilemedi: {html_error}")
+                    # Dosya adını belirle
+                    if "Content-Disposition" in response.headers:
+                        # Content-Disposition header'ından dosya adını çıkar
+                        content_disp = response.headers["Content-Disposition"]
+                        filename_match = re.search(r'filename="(.+?)"', content_disp)
+                        if filename_match:
+                            filename = filename_match.group(1)
+                        else:
+                            filename = f"dosya_{i}_{j}"
+                    else:
+                        # URL'den dosya adını çıkar
+                        filename = download_link.split("/")[-1].split("?")[0]
+                        if not filename or len(filename) < 3:
+                            filename = f"dosya_{i}_{j}"
+                    
+                    # Dosya yolu oluştur
+                    file_path = os.path.join(download_dir, filename)
+                    
+                    # Dosyayı kaydet
+                    with open(file_path, "wb") as f:
+                        for chunk in response.iter_content(chunk_size=8192):
+                            if chunk:
+                                f.write(chunk)
+                    
+                    print(f"✅ Dosya başarıyla indirildi: {file_path}")
+                    
+                except Exception as e:
+                    print(f"❌ Dosya indirilirken bir hata oluştu: {e}")
             
         except Exception as e:
             print(f"❌ Linke gidilirken bir hata oluştu: {e}")
