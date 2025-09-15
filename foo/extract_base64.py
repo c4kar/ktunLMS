@@ -1,5 +1,3 @@
-
-
 import json
 
 def extract_base64_from_json(json_file_path, output_txt_file):
@@ -45,4 +43,3 @@ if __name__ == '__main__':
     JSON_FILE = 'data.json'
     OUTPUT_FILE = 'base64_codes.txt'
     extract_base64_from_json(JSON_FILE, OUTPUT_FILE)
-
