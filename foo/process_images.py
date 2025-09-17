@@ -2,6 +2,7 @@ import json
 import base64
 import os
 import shutil
+import argparse
 
 def get_folder_name_from_md(file_path):
     """
@@ -27,7 +28,7 @@ def get_folder_name_from_md(file_path):
         # Invalid chars: < > : " / \ | ? *
         # Also replace the en-dash with a standard hyphen
         folder_name = folder_name.replace('–', '-')
-        invalid_chars = '<>:"/\\|?*'
+        invalid_chars = '<>:"/\|?*'
         for char in invalid_chars:
             folder_name = folder_name.replace(char, '')
             
@@ -173,21 +174,32 @@ def rename_md_in_folder(folder_path, original_md_filename):
         print(f"An error occurred during renaming: {e}")
 
 if __name__ == "__main__":
-    JSON_FILE = 'data.json'
-    MD_FILE = 'md.md'
+    parser = argparse.ArgumentParser(description="Process JSON and Markdown files to create a structured folder with images.")
+    parser.add_argument("source_directory", help="The path to the directory containing data.json and md.md.")
+    args = parser.parse_args()
+
+    source_dir = args.source_directory
     
-    # Step 1: Determine the folder name from the markdown file's first line
-    IMAGE_DIR = get_folder_name_from_md(MD_FILE)
+    # Define file paths based on the source directory
+    json_file = os.path.join(source_dir, 'data.json')
+    md_file = os.path.join(source_dir, 'md.md')
     
-    # Step 2: Extract base64 codes from the JSON file
-    extracted_codes = extract_base64_from_json(JSON_FILE)
-    
-    # Step 3: If extraction was successful, process files
-    if extracted_codes:
-        convert_base64_to_images(extracted_codes, IMAGE_DIR)
-        copy_file_to_dir(MD_FILE, IMAGE_DIR)
-        
-        # Step 4: Rename the copied markdown file to match the folder name
-        rename_md_in_folder(IMAGE_DIR, MD_FILE)
+    if not os.path.exists(json_file) or not os.path.exists(md_file):
+        print(f"Error: 'data.json' or 'md.md' not found in the specified directory: {source_dir}")
     else:
-        print("Could not proceed with image conversion due to an error during extraction.")
+        # Step 1: Determine the folder name from the markdown file's first line
+        output_folder_name = get_folder_name_from_md(md_file)
+        output_folder_path = os.path.join(source_dir, output_folder_name)
+        
+        # Step 2: Extract base64 codes from the JSON file
+        extracted_codes = extract_base64_from_json(json_file)
+        
+        # Step 3: If extraction was successful, process files
+        if extracted_codes:
+            convert_base64_to_images(extracted_codes, output_folder_path)
+            copy_file_to_dir(md_file, output_folder_path)
+            
+            # Step 4: Rename the copied markdown file to match the folder name
+            rename_md_in_folder(output_folder_path, os.path.basename(md_file))
+        else:
+            print("Could not proceed with image conversion due to an error during extraction.")

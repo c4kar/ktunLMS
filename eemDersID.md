@@ -1,4 +1,6 @@
-15848 -  [# Atatürk İlkeleri ve İnkılap Tarihi](https://lms.ktun.edu.tr/course/view.php?id=15848)
+
+
+15848 - [# Atatürk İlkeleri ve İnkılap Tarihi](https://lms.ktun.edu.tr/course/view.php?id=15848)
 
 15849 - [# Bilgisayar Destekli Teknik Resim](https://lms.ktun.edu.tr/course/view.php?id=15849)
 

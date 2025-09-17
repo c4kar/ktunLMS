@@ -1,0 +1,8 @@
+ID: 3904, Title: Bilgisayar Programlama II_SB:0_Elektrik-Elektronik Mühendisliği
+ID: 3891, Title: Devre Analizi I_SB:0_Elektrik-Elektronik Mühendisliği
+ID: 3895, Title: Diferansiyel Denklemler_SB:0_Elektrik-Elektronik Mühendisliği
+ID: 3894, Title: Elektronik I_SB:0_Elektrik-Elektronik Mühendisliği
+ID: 4008, Title: İş Sağlığı ve Güvenliği I_SB:0_Elektrik-Elektronik Mühendisliği
+ID: 3903, Title: Lojik Devreler_SB:0_Elektrik-Elektronik Mühendisliği
+ID: 3898, Title: Mühendislik Mekaniği_SB:0_Elektrik-Elektronik Mühendisliği
+ID: 3900, Title: Temel Elektrik ve Ölçme Lab._SB:0_Elektrik-Elektronik Mühendisliği

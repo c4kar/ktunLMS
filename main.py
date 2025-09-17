@@ -20,16 +20,9 @@ if __name__ == "__main__":
         "-c", "--course-ids", 
         required=True, 
         nargs='+', 
-        help="İçeriği indirilecek derslerin ID'leri (*boşluklarla ayırarak birden fazla girilebilir)."
-    )
-    parser.add_argument(
-        "-d", "--download",
-        action="store_true",
-        required=False,
-        help="Bu bayrak eklendiğinde, ders materyallerini (PDF, DOCX vb.) indirir.\nÖrnek kullanım:\npy main.py -e <email> -p <şifre> -c 15496 15848 -d"
+        help="İçeriği indirilecek derslerin ID'leri (*boşluklarla ayırarak birden fazla girilebilir). \nÖrnek kullanım:\npy main.py -e <email> -p <şifre> -c 15496 15848"
     )
     
     args = parser.parse_args()
-    # args.download
     # Ana fonksiyonu diğer dosyadan çağır.
-    otomasyonu_baslat(args.email, args.password, args.course_ids, args.download)
+    otomasyonu_baslat(args.email, args.password, args.course_ids)

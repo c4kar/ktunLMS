@@ -392,25 +392,24 @@ def download_documents_from_md(driver, md_filename, course_title):
     )
 
 
-# if __name__ == "__main__":
-#     parser = argparse.ArgumentParser(
-#         description="KTÜN LMS sisteminden ders içeriklerini indiren otomasyon script'i.",
-#         formatter_class=argparse.RawTextHelpFormatter
-#     )
-#     parser.add_argument(
-#         "-e", "--email",
-#         required=True,
-#         help="KTÜN uzantılı e-posta adresiniz (örn: f241202002@ktun.edu.tr)"
-#     )
-#     parser.add_argument(
-#         "-p", "--password",
-#         required=True,
-#         help="LMS şifreniz."
-#     )
-#     parser.add_argument(
-#     "-c", "--course-ids",
-#         required=True,
-#         nargs='+',
-#         help="İçeriği indirilecek derslerin ID'leri (boşluklarla ayırarak birden fazla girilebilir).\n Örnek kullanım:\n"
-#     )
-
+ if __name__ == "__main__":
+     parser = argparse.ArgumentParser(
+         description="KTÜN LMS sisteminden ders içeriklerini indiren otomasyon script'i.",
+         formatter_class=argparse.RawTextHelpFormatter
+     )
+     parser.add_argument(
+         "-e", "--email",
+         required=True,
+         help="KTÜN uzantılı e-posta adresiniz (örn: f241202002@ktun.edu.tr)"
+     )
+     parser.add_argument(
+         "-p", "--password",
+         required=True,
+         help="LMS şifreniz."
+     )
+     parser.add_argument(
+     "-c", "--course-ids",
+         required=True,
+         nargs='+',
+         help="İçeriği indirilecek derslerin ID'leri (boşluklarla ayırarak birden fazla girilebilir).\n Örnek kullanım:\n"
+     )
